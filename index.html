@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日本地図マスター - 都道府県＆地方クイズ</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --primary-color: #3b82f6;
+            --success-color: #10b981;
+            --error-color: #ef4444;
+            --text-color: #1f2937;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 1.8rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 18px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+
+        button.active {
+            background-color: var(--primary-color);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+        }
+
+        .scoreboard {
+            font-size: 1.1rem;
+            font-weight: bold;
+            background: var(--card-bg);
+            padding: 8px 16px;
+            border-radius: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .map-container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+            max-height: 550px;
+        }
+
+        .pref {
+            fill: #d1d5db;
+            stroke: #ffffff;
+            stroke-width: 1.5;
+            cursor: pointer;
+            transition: fill 0.2s ease, transform 0.1s ease;
+        }
+
+        .pref:hover {
+            fill: #9ca3af;
+        }
+
+        .pref.active-highlight {
+            fill: #60a5fa !important;
+        }
+
+        .pref.solved {
+            fill: var(--success-color) !important;
+            cursor: default;
+        }
+
+        .pref-label {
+            font-size: 10px;
+            fill: #374151;
+            pointer-events: none;
+            text-anchor: middle;
+            dominant-baseline: central;
+            font-weight: bold;
+        }
+
+        /* Modal / Dialog */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 100;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 360px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            text-align: center;
+        }
+
+        .modal h2 {
+            margin-top: 0;
+            font-size: 1.3rem;
+            color: #111827;
+        }
+
+        .input-group {
+            margin: 15px 0;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: #4b5563;
+            margin-bottom: 5px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1.5px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary-color);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-actions button {
+            flex: 1;
+        }
+
+        .btn-submit {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-cancel {
+            background-color: #f3f4f6;
+            color: #4b5563;
+        }
+
+        .feedback-msg {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            min-height: 1.2em;
+        }
+
+        .feedback-msg.correct { color: var(--success-color); }
+        .feedback-msg.wrong { color: var(--error-color); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🗾 日本地図マスター</h1>
+        <div class="controls">
+            <button id="modePref" class="active" onclick="switchMode('pref')">都道府県モード</button>
+            <button id="modeRegion" onclick="switchMode('region')">地方モード</button>
+            <button onclick="resetGame()" style="background-color: #fee2e2; color: #dc2626;">リセット</button>
+        </div>
+        <div class="scoreboard">
+            スコア: <span id="score">0</span> / <span id="totalScore">47</span>
+        </div>
+    </header>
+
+    <div class="map-container">
+        <!-- Grid-like Map SVG Layout for Japan Prefectures -->
+        <svg viewBox="0 0 700 600" id="japanMap"></svg>
+    </div>
+
+    <!-- Modal Form -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h2 id="modalTitle">回答を入力</h2>
+            <div id="prefInputs">
+                <div class="input-group">
+                    <label for="inputPref">都道府県名</label>
+                    <input type="text" id="inputPref" placeholder="例: 東京都" autocomplete="off">
+                </div>
+                <div class="input-group">
+                    <label for="inputCapital">県庁所在地名</label>
+                    <input type="text" id="inputCapital" placeholder="例: 新宿区" autocomplete="off">
+                </div>
+            </div>
+            <div id="regionInputs" style="display:none;">
+                <div class="input-group">
+                    <label for="inputRegion">地方名</label>
+                    <input type="text" id="inputRegion" placeholder="例: 関東地方" autocomplete="off">
+                </div>
+            </div>
+            <div class="feedback-msg" id="feedback"></div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+                <button class="btn-submit" onclick="checkAnswer()">決定</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 都道府県データ一覧
+        const prefData = [
+            { id: "hokkaido", name: "北海道", capital: "札幌市", region: "北海道地方", x: 540, y: 50, w: 90, h: 80 },
+            { id: "aomori", name: "青森県", capital: "青森市", region: "東北地方", x: 520, y: 150, w: 50, h: 40 },
+            { id: "iwate", name: "岩手県", capital: "盛岡市", region: "東北地方", x: 550, y: 200, w: 45, h: 40 },
+            { id: "miyagi", name: "宮城県", capital: "仙台市", region: "東北地方", x: 550, y: 245, w: 45, h: 35 },
+            { id: "akita", name: "秋田県", capital: "秋田市", region: "東北地方", x: 500, y: 200, w: 45, h: 40 },
+            { id: "yamagata", name: "山形県", capital: "山形市", region: "東北地方", x: 500, y: 245, w: 45, h: 35 },
+            { id: "fukushima", name: "福島県", capital: "福島市", region: "東北地方", x: 520, y: 285, w: 65, h: 35 },
+            
+            { id: "ibaraki", name: "茨城県", capital: "水戸市", region: "関東地方", x: 545, y: 330, w: 40, h: 35 },
+            { id: "tochigi", name: "栃木県", capital: "宇都宮市", region: "関東地方", x: 500, y: 330, w: 40, h: 35 },
+            { id: "gunma", name: "群馬県", capital: "前橋市", region: "関東地方", x: 455, y: 330, w: 40, h: 35 },
+            { id: "saitama", name: "埼玉県", capital: "さいたま市", region: "関東地方", x: 475, y: 370, w: 45, h: 30 },
+            { id: "chiba", name: "千葉県", capital: "千葉市", region: "関東地方", x: 525, y: 370, w: 45, h: 50 },
+            { id: "tokyo", name: "東京都", capital: "新宿区", region: "関東地方", x: 475, y: 405, w: 45, h: 30 },
+            { id: "kanagawa", name: "神奈川県", capital: "横浜市", region: "関東地方", x: 475, y: 440, w: 45, h: 30 },
+
+            { id: "niigata", name: "新潟県", capital: "新潟市", region: "中部地方", x: 455, y: 285, w: 60, h: 40 },
+            { id: "toyama", name: "富山県", capital: "富山市", region: "中部地方", x: 405, y: 310, w: 40, h: 30 },
+            { id: "ishikawa", name: "石川県", capital: "金沢市", region: "中部地方", x: 380, y: 270, w: 35, h: 35 },
+            { id: "fukui", name: "福井県", capital: "福井市", region: "中部地方", x: 360, y: 310, w: 40, h: 35 },
+            { id: "yamanashi", name: "山梨県", capital: "甲府市", region: "中部地方", x: 425, y: 370, w: 45, h: 30 },
+            { id: "nagano", name: "長野県", capital: "長野市", region: "中部地方", x: 425, y: 325, w: 25, h: 40 },
+            { id: "gifu", name: "岐阜県", capital: "岐阜市", region: "中部地方", x: 380, y: 350, w: 40, h: 40 },
+            { id: "shizuoka", name: "静岡県", capital: "静岡市", region: "中部地方", x: 425, y: 405, w: 45, h: 35 },
+            { id: "aichi", name: "愛知県", capital: "名古屋市", region: "中部地方", x: 380, y: 395, w: 40, h: 40 },
+
+            { id: "mie", name: "三重県", capital: "津市", region: "近畿地方", x: 355, y: 410, w: 35, h: 45 },
+            { id: "shiga", name: "滋賀県", capital: "大津市", region: "近畿地方", x: 345, y: 350, w: 30, h: 30 },
+            { id: "kyoto", name: "京都府", capital: "京都市", region: "近畿地方", x: 310, y: 345, w: 30, h: 35 },
+            { id: "osaka", name: "大阪府", capital: "大阪市", region: "近畿地方", x: 310, y: 385, w: 30, h: 35 },
+            { id: "hyogo", name: "兵庫県", capital: "神戸市", region: "近畿地方", x: 265, y: 345, w: 40, h: 45 },
+            { id: "nara", name: "奈良県", capital: "奈良市", region: "近畿地方", x: 315, y: 425, w: 35, h: 35 },
+            { id: "wakayama", name: "和歌山県", capital: "和歌山市", region: "近畿地方", x: 275, y: 440, w: 35, h: 40 },
+
+            { id: "tottori", name: "鳥取県", capital: "鳥取市", region: "中国地方", x: 220, y: 345, w: 40, h: 25 },
+            { id: "shimane", name: "島根県", capital: "松江市", region: "中国地方", x: 175, y: 345, w: 40, h: 25 },
+            { id: "okayama", name: "岡山県", capital: "岡山市", region: "中国地方", x: 220, y: 375, w: 40, h: 25 },
+            { id: "hiroshima", name: "広島県", capital: "広島市", region: "中国地方", x: 175, y: 375, w: 40, h: 25 },
+            { id: "yamaguchi", name: "山口県", capital: "山口市", region: "中国地方", x: 130, y: 360, w: 40, h: 40 },
+
+            { id: "tokushima", name: "徳島県", capital: "徳島市", region: "四国地方", x: 220, y: 445, w: 35, h: 25 },
+            { id: "kagawa", name: "香川県", capital: "高松市", region: "四国地方", x: 220, y: 415, w: 35, h: 25 },
+            { id: "ehime", name: "愛媛県", capital: "松山市", region: "四国地方", x: 180, y: 415, w: 35, h: 30 },
+            { id: "kochi", name: "高知県", capital: "高知市", region: "四国地方", x: 180, y: 450, w: 35, h: 25 },
+
+            { id: "fukuoka", name: "福岡県", capital: "福岡市", region: "九州地方", x: 100, y: 415, w: 35, h: 30 },
+            { id: "saga", name: "佐賀県", capital: "佐賀市", region: "九州地方", x: 60, y: 425, w: 35, h: 25 },
+            { id: "nagasaki", name: "長崎県", capital: "長崎市", region: "九州地方", x: 45, y: 455, w: 35, h: 30 },
+            { id: "kumamoto", name: "熊本県", capital: "熊本市", region: "九州地方", x: 85, y: 450, w: 35, h: 35 },
+            { id: "oita", name: "大分県", capital: "大分市", region: "九州地方", x: 125, y: 450, w: 35, h: 30 },
+            { id: "miyazaki", name: "宮崎県", capital: "宮崎市", region: "九州地方", x: 115, y: 485, w: 35, h: 35 },
+            { id: "kagoshima", name: "鹿児島県", capital: "鹿児島市", region: "九州地方", x: 75, y: 490, w: 35, h: 40 },
+            { id: "okinawa", name: "沖縄県", capital: "那覇市", region: "九州地方", x: 180, y: 520, w: 50, h: 30 }
+        ];
+
+        let currentMode = 'pref'; // 'pref' または 'region'
+        let selectedItem = null;
+        let solvedPrefs = new Set();
+        let solvedRegions = new Set();
+
+        const mapSvg = document.getElementById('japanMap');
+
+        // 地図の初期化（SVG生成）
+        function initMap() {
+            mapSvg.innerHTML = '';
+            
+            // 枠線（沖縄の区切り等）
+            const borderLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            borderLine.setAttribute("x1", "160"); borderLine.setAttribute("y1", "510");
+            borderLine.setAttribute("x2", "240"); borderLine.setAttribute("y2", "510");
+            borderLine.setAttribute("stroke", "#cbd5e1");
+            borderLine.setAttribute("stroke-dasharray", "4");
+            mapSvg.appendChild(borderLine);
+
+            prefData.forEach(p => {
+                const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                rect.setAttribute("x", p.x);
+                rect.setAttribute("y", p.y);
+                rect.setAttribute("width", p.w);
+                rect.setAttribute("height", p.h);
+                rect.setAttribute("rx", "4");
+                rect.setAttribute("class", "pref");
+                rect.setAttribute("id", `map-${p.id}`);
+                rect.setAttribute("data-id", p.id);
+                rect.onclick = () => handleMapClick(p);
+
+                mapSvg.appendChild(rect);
+            });
+        }
+
+        // モード切り替え
+        function switchMode(mode) {
+            currentMode = mode;
+            document.getElementById('modePref').classList.toggle('active', mode === 'pref');
+            document.getElementById('modeRegion').classList.toggle('active', mode === 'region');
+            updateScoreDisplay();
+            clearHighlights();
+            updateMapStyles();
+        }
+
+        // 地図クリック時のハンドラ
+        function handleMapClick(item) {
+            clearHighlights();
+
+            if (currentMode === 'pref') {
+                if (solvedPrefs.has(item.id)) return;
+                selectedItem = item;
+                document.getElementById(`map-${item.id}`).classList.add('active-highlight');
+                openModal(`都道府県クイズ`, true);
+            } else {
+                if (solvedRegions.has(item.region)) return;
+                selectedItem = item;
+                // 同一地方の全県をハイライト
+                prefData.filter(p => p.region === item.region).forEach(p => {
+                    document.getElementById(`map-${p.id}`).classList.add('active-highlight');
+                });
+                openModal(`地方クイズ`, false);
+            }
+        }
+
+        // ダイアログ表示
+        function openModal(title, isPref) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('prefInputs').style.display = isPref ? 'block' : 'none';
+            document.getElementById('regionInputs').style.display = isPref ? 'none' : 'block';
+            
+            document.getElementById('inputPref').value = '';
+            document.getElementById('inputCapital').value = '';
+            document.getElementById('inputRegion').value = '';
+            document.getElementById('feedback').innerText = '';
+            document.getElementById('feedback').className = 'feedback-msg';
+
+            document.getElementById('modalOverlay').classList.add('open');
+            setTimeout(() => {
+                if (isPref) document.getElementById('inputPref').focus();
+                else document.getElementById('inputRegion').focus();
+            }, 100);
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('open');
+            clearHighlights();
+        }
+
+        function clearHighlights() {
+            document.querySelectorAll('.pref').forEach(el => el.classList.remove('active-highlight'));
+        }
+
+        // 文字列の正規化（「県」「都」「地方」などの表記ゆれを許容）
+        function normalize(str) {
+            return str.trim()
+                .replace(/(都道府県|都|道|府|県|地方|市|区)$/g, '')
+                .toLowerCase();
+        }
+
+        // 正誤判定
+        function checkAnswer() {
+            const feedback = document.getElementById('feedback');
+
+            if (currentMode === 'pref') {
+                const userPref = normalize(document.getElementById('inputPref').value);
+                const userCapital = normalize(document.getElementById('inputCapital').value);
+
+                const correctPref = normalize(selectedItem.name);
+                const correctCapital = normalize(selectedItem.capital);
+
+                if (userPref === correctPref && userCapital === correctCapital) {
+                    feedback.innerText = "正解です！🎉";
+                    feedback.className = "feedback-msg correct";
+                    solvedPrefs.add(selectedItem.id);
+                    setTimeout(() => {
+                        closeModal();
+                        updateMapStyles();
+                        updateScoreDisplay();
+                    }, 800);
+                } else {
+                    feedback.innerText = `不正解... 正解は「${selectedItem.name} / ${selectedItem.capital}」`;
+                    feedback.className = "feedback-msg wrong";
+                }
+            } else {
+                const userRegion = normalize(document.getElementById('inputRegion').value);
+                const correctRegion = normalize(selectedItem.region);
+
+                if (userRegion === correctRegion) {
+                    feedback.innerText = "正解です！🎉";
+                    feedback.className = "feedback-msg correct";
+                    solvedRegions.add(selectedItem.region);
+                    setTimeout(() => {
+                        closeModal();
+                        updateMapStyles();
+                        updateScoreDisplay();
+                    }, 800);
+                } else {
+                    feedback.innerText = `不正解... 正解は「${selectedItem.region}」`;
+                    feedback.className = "feedback-msg wrong";
+                }
+            }
+        }
+
+        // 地図の色の更新
+        function updateMapStyles() {
+            prefData.forEach(p => {
+                const el = document.getElementById(`map-${p.id}`);
+                const isSolved = (currentMode === 'pref') 
+                    ? solvedPrefs.has(p.id) 
+                    : solvedRegions.has(p.region);
+
+                if (isSolved) {
+                    el.classList.add('solved');
+                } else {
+                    el.classList.remove('solved');
+                }
+            });
+        }
+
+        // スコア表示更新
+        function updateScoreDisplay() {
+            const scoreEl = document.getElementById('score');
+            const totalEl = document.getElementById('totalScore');
+
+            if (currentMode === 'pref') {
+                scoreEl.innerText = solvedPrefs.size;
+                totalEl.innerText = '47';
+            } else {
+                scoreEl.innerText = solvedRegions.size;
+                totalEl.innerText = '8';
+            }
+        }
+
+        // ゲームリセット
+        function resetGame() {
+            if (confirm("進行状況をリセットしますか？")) {
+                solvedPrefs.clear();
+                solvedRegions.clear();
+                updateMapStyles();
+                updateScoreDisplay();
+            }
+        }
+
+        // Enterキーで送信
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && document.getElementById('modalOverlay').classList.contains('open')) {
+                checkAnswer();
+            }
+        });
+
+        // 初期化実行
+        initMap();
+        updateScoreDisplay();
+    </script>
+</body>
+</html>
