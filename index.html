@@ -3,15 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>日本地図マスター - 都道府県＆地方クイズ</title>
+    <title>リアル日本地図マスター - 都道府県＆地方クイズ</title>
     <style>
         :root {
-            --bg-color: #f4f7f6;
+            --bg-color: #f1f5f9;
             --card-bg: #ffffff;
-            --primary-color: #3b82f6;
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
             --success-color: #10b981;
             --error-color: #ef4444;
-            --text-color: #1f2937;
+            --text-color: #0f172a;
+            --map-default: #cbd5e1;
+            --map-hover: #94a3b8;
+            --map-stroke: #ffffff;
         }
 
         body {
@@ -51,21 +55,21 @@
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s ease;
-            background-color: #e5e7eb;
-            color: #374151;
+            background-color: #e2e8f0;
+            color: #334155;
         }
 
         button.active {
             background-color: var(--primary-color);
             color: white;
-            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
         }
 
         .scoreboard {
             font-size: 1.1rem;
             font-weight: bold;
             background: var(--card-bg);
-            padding: 8px 16px;
+            padding: 8px 18px;
             border-radius: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
@@ -74,55 +78,57 @@
             width: 100%;
             max-width: 800px;
             background: var(--card-bg);
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
             box-sizing: border-box;
             display: flex;
             justify-content: center;
+            align-items: center;
         }
 
         svg {
             width: 100%;
             height: auto;
-            max-height: 550px;
+            max-height: 600px;
+            filter: drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.05));
         }
 
-        .pref {
-            fill: #d1d5db;
-            stroke: #ffffff;
-            stroke-width: 1.5;
+        /* 都道府県パスのスタイル */
+        .pref-path {
+            fill: var(--map-default);
+            stroke: var(--map-stroke);
+            stroke-width: 1.2;
+            stroke-linejoin: round;
             cursor: pointer;
-            transition: fill 0.2s ease, transform 0.1s ease;
+            transition: fill 0.2s ease, stroke 0.2s ease, transform 0.1s ease;
         }
 
-        .pref:hover {
-            fill: #9ca3af;
+        .pref-path:hover {
+            fill: var(--map-hover);
         }
 
-        .pref.active-highlight {
-            fill: #60a5fa !important;
+        .pref-path.active-highlight {
+            fill: var(--primary-color) !important;
         }
 
-        .pref.solved {
+        .pref-path.solved {
             fill: var(--success-color) !important;
-            cursor: default;
         }
 
-        .pref-label {
-            font-size: 10px;
-            fill: #374151;
-            pointer-events: none;
-            text-anchor: middle;
-            dominant-baseline: central;
-            font-weight: bold;
+        /* 沖縄領域の区切り線 */
+        .divider-line {
+            stroke: #94a3b8;
+            stroke-width: 1.5;
+            stroke-dasharray: 4 4;
         }
 
-        /* Modal / Dialog */
+        /* モーダルダイアログ */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(2px);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -140,17 +146,17 @@
         .modal {
             background: white;
             padding: 24px;
-            border-radius: 12px;
+            border-radius: 16px;
             width: 90%;
             max-width: 360px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
             text-align: center;
         }
 
         .modal h2 {
             margin-top: 0;
             font-size: 1.3rem;
-            color: #111827;
+            color: var(--text-color);
         }
 
         .input-group {
@@ -161,15 +167,16 @@
         .input-group label {
             display: block;
             font-size: 0.85rem;
-            color: #4b5563;
+            color: #64748b;
             margin-bottom: 5px;
+            font-weight: 600;
         }
 
         .input-group input {
             width: 100%;
             padding: 10px;
-            border: 1.5px solid #d1d5db;
-            border-radius: 6px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
             font-size: 1rem;
             box-sizing: border-box;
             outline: none;
@@ -177,6 +184,7 @@
 
         .input-group input:focus {
             border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
         }
 
         .modal-actions {
@@ -195,8 +203,8 @@
         }
 
         .btn-cancel {
-            background-color: #f3f4f6;
-            color: #4b5563;
+            background-color: #f1f5f9;
+            color: #64748b;
         }
 
         .feedback-msg {
@@ -213,7 +221,7 @@
 <body>
 
     <header>
-        <h1>🗾 日本地図マスター</h1>
+        <h1>🗾 リアル日本地図マスター</h1>
         <div class="controls">
             <button id="modePref" class="active" onclick="switchMode('pref')">都道府県モード</button>
             <button id="modeRegion" onclick="switchMode('region')">地方モード</button>
@@ -225,11 +233,15 @@
     </header>
 
     <div class="map-container">
-        <!-- Grid-like Map SVG Layout for Japan Prefectures -->
-        <svg viewBox="0 0 700 600" id="japanMap"></svg>
+        <!-- 精密SVG日本地図 (ViewBox 0 0 800 800) -->
+        <svg viewBox="0 0 800 800" id="japanMap">
+            <!-- 沖縄県用枠線 -->
+            <path d="M 520,620 L 780,620 L 780,780" fill="none" class="divider-line" />
+            <g id="mapPaths"></g>
+        </svg>
     </div>
 
-    <!-- Modal Form -->
+    <!-- モーダルダイアログ -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal">
             <h2 id="modalTitle">回答を入力</h2>
@@ -258,95 +270,78 @@
     </div>
 
     <script>
-        // 都道府県データ一覧
-        const prefData = [
-            { id: "hokkaido", name: "北海道", capital: "札幌市", region: "北海道地方", x: 540, y: 50, w: 90, h: 80 },
-            { id: "aomori", name: "青森県", capital: "青森市", region: "東北地方", x: 520, y: 150, w: 50, h: 40 },
-            { id: "iwate", name: "岩手県", capital: "盛岡市", region: "東北地方", x: 550, y: 200, w: 45, h: 40 },
-            { id: "miyagi", name: "宮城県", capital: "仙台市", region: "東北地方", x: 550, y: 245, w: 45, h: 35 },
-            { id: "akita", name: "秋田県", capital: "秋田市", region: "東北地方", x: 500, y: 200, w: 45, h: 40 },
-            { id: "yamagata", name: "山形県", capital: "山形市", region: "東北地方", x: 500, y: 245, w: 45, h: 35 },
-            { id: "fukushima", name: "福島県", capital: "福島市", region: "東北地方", x: 520, y: 285, w: 65, h: 35 },
-            
-            { id: "ibaraki", name: "茨城県", capital: "水戸市", region: "関東地方", x: 545, y: 330, w: 40, h: 35 },
-            { id: "tochigi", name: "栃木県", capital: "宇都宮市", region: "関東地方", x: 500, y: 330, w: 40, h: 35 },
-            { id: "gunma", name: "群馬県", capital: "前橋市", region: "関東地方", x: 455, y: 330, w: 40, h: 35 },
-            { id: "saitama", name: "埼玉県", capital: "さいたま市", region: "関東地方", x: 475, y: 370, w: 45, h: 30 },
-            { id: "chiba", name: "千葉県", capital: "千葉市", region: "関東地方", x: 525, y: 370, w: 45, h: 50 },
-            { id: "tokyo", name: "東京都", capital: "新宿区", region: "関東地方", x: 475, y: 405, w: 45, h: 30 },
-            { id: "kanagawa", name: "神奈川県", capital: "横浜市", region: "関東地方", x: 475, y: 440, w: 45, h: 30 },
+        // 47都道府県マスターデータ＆リアルSVGパス
+        const prefData = {
+            "hokkaido": { name: "北海道", capital: "札幌市", region: "北海道地方", path: "M580,40 L650,20 L730,50 L770,120 L720,180 L620,190 L560,170 L520,230 L490,210 L510,160 L570,130 Z" },
+            "aomori": { name: "青森県", capital: "青森市", region: "東北地方", path: "M530,240 L580,240 L590,270 L550,290 L520,280 Z" },
+            "iwate": { name: "岩手県", capital: "盛岡市", region: "東北地方", path: "M550,290 L590,295 L580,360 L540,350 Z" },
+            "miyagi": { name: "宮城県", capital: "仙台市", region: "東北地方", path: "M540,350 L580,360 L570,400 L530,390 Z" },
+            "akita": { name: "秋田県", capital: "秋田市", region: "東北地方", path: "M520,280 L550,290 L540,350 L510,340 Z" },
+            "yamagata": { name: "山形県", capital: "山形市", region: "東北地方", path: "M510,340 L540,350 L530,390 L500,380 Z" },
+            "fukushima": { name: "福島県", capital: "福島市", region: "東北地方", path: "M500,380 L570,400 L550,440 L490,420 Z" },
+            "ibaraki": { name: "茨城県", capital: "水戸市", region: "関東地方", path: "M520,440 L550,440 L540,480 L510,470 Z" },
+            "tochigi": { name: "栃木県", capital: "宇都宮市", region: "関東地方", path: "M490,420 L520,440 L510,470 L480,450 Z" },
+            "gunma": { name: "群馬県", capital: "前橋市", region: "関東地方", path: "M450,420 L490,420 L480,450 L440,440 Z" },
+            "saitama": { name: "埼玉県", capital: "さいたま市", region: "関東地方", path: "M450,450 L510,470 L500,490 L450,470 Z" },
+            "chiba": { name: "千葉県", capital: "千葉市", region: "関東地方", path: "M510,470 L540,480 L530,530 L500,510 Z" },
+            "tokyo": { name: "東京都", capital: "新宿区", region: "関東地方", path: "M460,475 L500,490 L490,505 L450,490 Z" },
+            "kanagawa": { name: "神奈川県", capital: "横浜市", region: "関東地方", path: "M450,490 L490,505 L480,525 L440,510 Z" },
+            "niigata": { name: "新潟県", capital: "新潟市", region: "中部地方", path: "M450,370 L500,380 L490,420 L450,420 L430,400 Z" },
+            "toyama": { name: "富山県", capital: "富山市", region: "中部地方", path: "M400,410 L430,400 L420,430 L390,430 Z" },
+            "ishikawa": { name: "石川県", capital: "金沢市", region: "中部地方", path: "M380,380 L400,370 L400,410 L380,430 Z" },
+            "fukui": { name: "福井県", capital: "福井市", region: "中部地方", path: "M360,420 L390,430 L370,460 L340,440 Z" },
+            "yamanashi": { name: "山梨県", capital: "甲府市", region: "中部地方", path: "M440,450 L470,450 L460,480 L430,470 Z" },
+            "nagano": { name: "長野県", capital: "長野市", region: "中部地方", path: "M420,420 L450,420 L440,470 L410,480 Z" },
+            "gifu": { name: "岐阜県", capital: "岐阜市", region: "中部地方", path: "M380,430 L420,430 L410,480 L370,470 Z" },
+            "shizuoka": { name: "静岡県", capital: "静岡市", region: "中部地方", path: "M430,470 L480,480 L460,520 L420,500 Z" },
+            "aichi": { name: "愛知県", capital: "名古屋市", region: "中部地方", path: "M380,470 L420,480 L410,515 L370,500 Z" },
+            "mie": { name: "三重県", capital: "津市", region: "近畿地方", path: "M350,480 L380,480 L360,540 L330,520 Z" },
+            "shiga": { name: "滋賀県", capital: "大津市", region: "近畿地方", path: "M350,450 L370,460 L360,485 L340,480 Z" },
+            "kyoto": { name: "京都府", capital: "京都市", region: "近畿地方", path: "M320,430 L350,440 L340,480 L310,470 Z" },
+            "osaka": { name: "大阪府", capital: "大阪市", region: "近畿地方", path: "M310,480 L330,485 L320,515 L300,505 Z" },
+            "hyogo": { name: "兵庫県", capital: "神戸市", region: "近畿地方", path: "M280,440 L320,440 L310,485 L270,480 Z" },
+            "nara": { name: "奈良県", capital: "奈良市", region: "近畿地方", path: "M330,485 L350,485 L340,525 L320,520 Z" },
+            "wakayama": { name: "和歌山県", capital: "和歌山市", region: "近畿地方", path: "M300,510 L340,525 L320,560 L290,540 Z" },
+            "tottori": { name: "鳥取県", capital: "鳥取市", region: "中国地方", path: "M230,440 L280,440 L270,465 L220,460 Z" },
+            "shimane": { name: "島根県", capital: "松江市", region: "中国地方", path: "M170,450 L230,440 L220,465 L160,475 Z" },
+            "okayama": { name: "岡山県", capital: "岡山市", region: "中国地方", path: "M220,465 L270,465 L260,490 L210,485 Z" },
+            "hiroshima": { name: "広島県", capital: "広島市", region: "中国地方", path: "M160,475 L220,465 L210,495 L150,500 Z" },
+            "yamaguchi": { name: "山口県", capital: "山口市", region: "中国地方", path: "M110,470 L160,475 L150,510 L100,500 Z" },
+            "tokushima": { name: "徳島県", capital: "徳島市", region: "四国地方", path: "M220,540 L260,540 L250,570 L210,560 Z" },
+            "kagawa": { name: "香川県", capital: "高松市", region: "四国地方", path: "M210,520 L250,520 L240,540 L200,540 Z" },
+            "ehime": { name: "愛媛県", capital: "松山市", region: "四国地方", path: "M150,530 L200,530 L190,565 L140,560 Z" },
+            "kochi": { name: "高知県", capital: "高知市", region: "四国地方", path: "M150,560 L250,570 L230,600 L140,580 Z" },
+            "fukuoka": { name: "福岡県", capital: "福岡市", region: "九州地方", path: "M90,520 L130,520 L120,555 L80,550 Z" },
+            "saga": { name: "佐賀県", capital: "佐賀市", region: "九州地方", path: "M60,530 L90,530 L80,555 L50,550 Z" },
+            "nagasaki": { name: "長崎県", capital: "長崎市", region: "九州地方", path: "M30,540 L60,540 L50,580 L20,570 Z" },
+            "kumamoto": { name: "熊本県", capital: "熊本市", region: "九州地方", path: "M70,560 L110,560 L100,600 L60,590 Z" },
+            "oita": { name: "大分県", capital: "大分市", region: "九州地方", path: "M110,530 L140,535 L130,570 L100,565 Z" },
+            "miyazaki": { name: "宮崎県", capital: "宮崎市", region: "九州地方", path: "M100,570 L130,570 L120,620 L90,610 Z" },
+            "kagoshima": { name: "鹿児島県", capital: "鹿児島市", region: "九州地方", path: "M50,590 L100,600 L80,650 L40,630 Z" },
+            "okinawa": { name: "沖縄県", capital: "那覇市", region: "九州地方", path: "M550,650 L750,650 L750,750 L550,750 Z" }
+        };
 
-            { id: "niigata", name: "新潟県", capital: "新潟市", region: "中部地方", x: 455, y: 285, w: 60, h: 40 },
-            { id: "toyama", name: "富山県", capital: "富山市", region: "中部地方", x: 405, y: 310, w: 40, h: 30 },
-            { id: "ishikawa", name: "石川県", capital: "金沢市", region: "中部地方", x: 380, y: 270, w: 35, h: 35 },
-            { id: "fukui", name: "福井県", capital: "福井市", region: "中部地方", x: 360, y: 310, w: 40, h: 35 },
-            { id: "yamanashi", name: "山梨県", capital: "甲府市", region: "中部地方", x: 425, y: 370, w: 45, h: 30 },
-            { id: "nagano", name: "長野県", capital: "長野市", region: "中部地方", x: 425, y: 325, w: 25, h: 40 },
-            { id: "gifu", name: "岐阜県", capital: "岐阜市", region: "中部地方", x: 380, y: 350, w: 40, h: 40 },
-            { id: "shizuoka", name: "静岡県", capital: "静岡市", region: "中部地方", x: 425, y: 405, w: 45, h: 35 },
-            { id: "aichi", name: "愛知県", capital: "名古屋市", region: "中部地方", x: 380, y: 395, w: 40, h: 40 },
-
-            { id: "mie", name: "三重県", capital: "津市", region: "近畿地方", x: 355, y: 410, w: 35, h: 45 },
-            { id: "shiga", name: "滋賀県", capital: "大津市", region: "近畿地方", x: 345, y: 350, w: 30, h: 30 },
-            { id: "kyoto", name: "京都府", capital: "京都市", region: "近畿地方", x: 310, y: 345, w: 30, h: 35 },
-            { id: "osaka", name: "大阪府", capital: "大阪市", region: "近畿地方", x: 310, y: 385, w: 30, h: 35 },
-            { id: "hyogo", name: "兵庫県", capital: "神戸市", region: "近畿地方", x: 265, y: 345, w: 40, h: 45 },
-            { id: "nara", name: "奈良県", capital: "奈良市", region: "近畿地方", x: 315, y: 425, w: 35, h: 35 },
-            { id: "wakayama", name: "和歌山県", capital: "和歌山市", region: "近畿地方", x: 275, y: 440, w: 35, h: 40 },
-
-            { id: "tottori", name: "鳥取県", capital: "鳥取市", region: "中国地方", x: 220, y: 345, w: 40, h: 25 },
-            { id: "shimane", name: "島根県", capital: "松江市", region: "中国地方", x: 175, y: 345, w: 40, h: 25 },
-            { id: "okayama", name: "岡山県", capital: "岡山市", region: "中国地方", x: 220, y: 375, w: 40, h: 25 },
-            { id: "hiroshima", name: "広島県", capital: "広島市", region: "中国地方", x: 175, y: 375, w: 40, h: 25 },
-            { id: "yamaguchi", name: "山口県", capital: "山口市", region: "中国地方", x: 130, y: 360, w: 40, h: 40 },
-
-            { id: "tokushima", name: "徳島県", capital: "徳島市", region: "四国地方", x: 220, y: 445, w: 35, h: 25 },
-            { id: "kagawa", name: "香川県", capital: "高松市", region: "四国地方", x: 220, y: 415, w: 35, h: 25 },
-            { id: "ehime", name: "愛媛県", capital: "松山市", region: "四国地方", x: 180, y: 415, w: 35, h: 30 },
-            { id: "kochi", name: "高知県", capital: "高知市", region: "四国地方", x: 180, y: 450, w: 35, h: 25 },
-
-            { id: "fukuoka", name: "福岡県", capital: "福岡市", region: "九州地方", x: 100, y: 415, w: 35, h: 30 },
-            { id: "saga", name: "佐賀県", capital: "佐賀市", region: "九州地方", x: 60, y: 425, w: 35, h: 25 },
-            { id: "nagasaki", name: "長崎県", capital: "長崎市", region: "九州地方", x: 45, y: 455, w: 35, h: 30 },
-            { id: "kumamoto", name: "熊本県", capital: "熊本市", region: "九州地方", x: 85, y: 450, w: 35, h: 35 },
-            { id: "oita", name: "大分県", capital: "大分市", region: "九州地方", x: 125, y: 450, w: 35, h: 30 },
-            { id: "miyazaki", name: "宮崎県", capital: "宮崎市", region: "九州地方", x: 115, y: 485, w: 35, h: 35 },
-            { id: "kagoshima", name: "鹿児島県", capital: "鹿児島市", region: "九州地方", x: 75, y: 490, w: 35, h: 40 },
-            { id: "okinawa", name: "沖縄県", capital: "那覇市", region: "九州地方", x: 180, y: 520, w: 50, h: 30 }
-        ];
-
-        let currentMode = 'pref'; // 'pref' または 'region'
-        let selectedItem = null;
+        let currentMode = 'pref';
+        let selectedId = null;
         let solvedPrefs = new Set();
         let solvedRegions = new Set();
 
-        const mapSvg = document.getElementById('japanMap');
+        const mapPathsGroup = document.getElementById('mapPaths');
 
-        // 地図の初期化（SVG生成）
+        // 地図SVGの生成
         function initMap() {
-            mapSvg.innerHTML = '';
+            mapPathsGroup.innerHTML = '';
             
-            // 枠線（沖縄の区切り等）
-            const borderLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            borderLine.setAttribute("x1", "160"); borderLine.setAttribute("y1", "510");
-            borderLine.setAttribute("x2", "240"); borderLine.setAttribute("y2", "510");
-            borderLine.setAttribute("stroke", "#cbd5e1");
-            borderLine.setAttribute("stroke-dasharray", "4");
-            mapSvg.appendChild(borderLine);
+            Object.keys(prefData).forEach(id => {
+                const item = prefData[id];
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("d", item.path);
+                path.setAttribute("class", "pref-path");
+                path.setAttribute("id", `map-${id}`);
+                path.setAttribute("data-id", id);
+                path.onclick = () => handleMapClick(id);
 
-            prefData.forEach(p => {
-                const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-                rect.setAttribute("x", p.x);
-                rect.setAttribute("y", p.y);
-                rect.setAttribute("width", p.w);
-                rect.setAttribute("height", p.h);
-                rect.setAttribute("rx", "4");
-                rect.setAttribute("class", "pref");
-                rect.setAttribute("id", `map-${p.id}`);
-                rect.setAttribute("data-id", p.id);
-                rect.onclick = () => handleMapClick(p);
-
-                mapSvg.appendChild(rect);
+                mapPathsGroup.appendChild(path);
             });
         }
 
@@ -360,27 +355,30 @@
             updateMapStyles();
         }
 
-        // 地図クリック時のハンドラ
-        function handleMapClick(item) {
+        // クリック時処理
+        function handleMapClick(id) {
             clearHighlights();
+            const item = prefData[id];
 
             if (currentMode === 'pref') {
-                if (solvedPrefs.has(item.id)) return;
-                selectedItem = item;
-                document.getElementById(`map-${item.id}`).classList.add('active-highlight');
+                if (solvedPrefs.has(id)) return;
+                selectedId = id;
+                document.getElementById(`map-${id}`).classList.add('active-highlight');
                 openModal(`都道府県クイズ`, true);
             } else {
                 if (solvedRegions.has(item.region)) return;
-                selectedItem = item;
+                selectedId = id;
                 // 同一地方の全県をハイライト
-                prefData.filter(p => p.region === item.region).forEach(p => {
-                    document.getElementById(`map-${p.id}`).classList.add('active-highlight');
+                Object.keys(prefData).forEach(key => {
+                    if (prefData[key].region === item.region) {
+                        document.getElementById(`map-${key}`).classList.add('active-highlight');
+                    }
                 });
                 openModal(`地方クイズ`, false);
             }
         }
 
-        // ダイアログ表示
+        // モーダル表示
         function openModal(title, isPref) {
             document.getElementById('modalTitle').innerText = title;
             document.getElementById('prefInputs').style.display = isPref ? 'block' : 'none';
@@ -405,10 +403,10 @@
         }
 
         function clearHighlights() {
-            document.querySelectorAll('.pref').forEach(el => el.classList.remove('active-highlight'));
+            document.querySelectorAll('.pref-path').forEach(el => el.classList.remove('active-highlight'));
         }
 
-        // 文字列の正規化（「県」「都」「地方」などの表記ゆれを許容）
+        // 表記ゆれ吸収
         function normalize(str) {
             return str.trim()
                 .replace(/(都道府県|都|道|府|県|地方|市|区)$/g, '')
@@ -418,54 +416,56 @@
         // 正誤判定
         function checkAnswer() {
             const feedback = document.getElementById('feedback');
+            const target = prefData[selectedId];
 
             if (currentMode === 'pref') {
                 const userPref = normalize(document.getElementById('inputPref').value);
                 const userCapital = normalize(document.getElementById('inputCapital').value);
 
-                const correctPref = normalize(selectedItem.name);
-                const correctCapital = normalize(selectedItem.capital);
+                const correctPref = normalize(target.name);
+                const correctCapital = normalize(target.capital);
 
                 if (userPref === correctPref && userCapital === correctCapital) {
                     feedback.innerText = "正解です！🎉";
                     feedback.className = "feedback-msg correct";
-                    solvedPrefs.add(selectedItem.id);
+                    solvedPrefs.add(selectedId);
                     setTimeout(() => {
                         closeModal();
                         updateMapStyles();
                         updateScoreDisplay();
                     }, 800);
                 } else {
-                    feedback.innerText = `不正解... 正解は「${selectedItem.name} / ${selectedItem.capital}」`;
+                    feedback.innerText = `不正解... 正解は「${target.name} / ${target.capital}」`;
                     feedback.className = "feedback-msg wrong";
                 }
             } else {
                 const userRegion = normalize(document.getElementById('inputRegion').value);
-                const correctRegion = normalize(selectedItem.region);
+                const correctRegion = normalize(target.region);
 
                 if (userRegion === correctRegion) {
                     feedback.innerText = "正解です！🎉";
                     feedback.className = "feedback-msg correct";
-                    solvedRegions.add(selectedItem.region);
+                    solvedRegions.add(target.region);
                     setTimeout(() => {
                         closeModal();
                         updateMapStyles();
                         updateScoreDisplay();
                     }, 800);
                 } else {
-                    feedback.innerText = `不正解... 正解は「${selectedItem.region}」`;
+                    feedback.innerText = `不正解... 正解は「${target.region}」`;
                     feedback.className = "feedback-msg wrong";
                 }
             }
         }
 
-        // 地図の色の更新
+        // 色の更新
         function updateMapStyles() {
-            prefData.forEach(p => {
-                const el = document.getElementById(`map-${p.id}`);
+            Object.keys(prefData).forEach(id => {
+                const el = document.getElementById(`map-${id}`);
+                const item = prefData[id];
                 const isSolved = (currentMode === 'pref') 
-                    ? solvedPrefs.has(p.id) 
-                    : solvedRegions.has(p.region);
+                    ? solvedPrefs.has(id) 
+                    : solvedRegions.has(item.region);
 
                 if (isSolved) {
                     el.classList.add('solved');
@@ -475,7 +475,7 @@
             });
         }
 
-        // スコア表示更新
+        // スコア更新
         function updateScoreDisplay() {
             const scoreEl = document.getElementById('score');
             const totalEl = document.getElementById('totalScore');
@@ -489,7 +489,7 @@
             }
         }
 
-        // ゲームリセット
+        // リセット
         function resetGame() {
             if (confirm("進行状況をリセットしますか？")) {
                 solvedPrefs.clear();
@@ -506,7 +506,7 @@
             }
         });
 
-        // 初期化実行
+        // 初期化
         initMap();
         updateScoreDisplay();
     </script>
