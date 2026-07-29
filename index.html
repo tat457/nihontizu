@@ -3,19 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>リアル日本地図マスター - 都道府県＆地方クイズ</title>
+    <title>日本地図パズルマスター - 都道府県＆地方クイズ</title>
     <style>
         :root {
-            --bg-color: #f1f5f9;
+            --bg-color: #f8fafc;
             --card-bg: #ffffff;
-            --primary-color: #2563eb;
-            --primary-hover: #1d4ed8;
-            --success-color: #10b981;
-            --error-color: #ef4444;
-            --text-color: #0f172a;
-            --map-default: #cbd5e1;
-            --map-hover: #94a3b8;
-            --map-stroke: #ffffff;
+            --text-color: #334155;
+            --primary-color: #3b82f6;
+            --success-color: #34d399;
+            --error-color: #f87171;
+            
+            /* 画像から抽出したパステルカラー */
+            --color-hokkaido: #f4b3b3;
+            --color-tohoku: #f4b3b3;
+            --color-kanto: #f9d8b0;
+            --color-chubu: #bce3b5;
+            --color-kinki: #bce3eb;
+            --color-chugoku: #c1c9f7;
+            --color-shikoku: #e6c1f4;
+            --color-kyushu: #fab7cc;
         }
 
         body {
@@ -37,6 +43,7 @@
         h1 {
             margin: 0 0 10px 0;
             font-size: 1.8rem;
+            color: #1e293b;
         }
 
         .controls {
@@ -48,39 +55,40 @@
         }
 
         button {
-            padding: 10px 18px;
+            padding: 10px 20px;
             font-size: 0.95rem;
             font-weight: bold;
             border: none;
-            border-radius: 8px;
+            border-radius: 20px;
             cursor: pointer;
             transition: all 0.2s ease;
             background-color: #e2e8f0;
-            color: #334155;
+            color: #475569;
         }
 
         button.active {
             background-color: var(--primary-color);
             color: white;
-            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
         }
 
         .scoreboard {
             font-size: 1.1rem;
             font-weight: bold;
             background: var(--card-bg);
-            padding: 8px 18px;
+            padding: 8px 20px;
             border-radius: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            display: inline-block;
         }
 
         .map-container {
             width: 100%;
             max-width: 800px;
             background: var(--card-bg);
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
             box-sizing: border-box;
             display: flex;
             justify-content: center;
@@ -90,45 +98,46 @@
         svg {
             width: 100%;
             height: auto;
-            max-height: 600px;
-            filter: drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.05));
+            max-height: 650px;
         }
 
-        /* 都道府県パスのスタイル */
+        /* 画像デザインに合わせた境界線とスタイル */
         .pref-path {
-            fill: var(--map-default);
-            stroke: var(--map-stroke);
-            stroke-width: 1.2;
+            stroke: #ffffff;
+            stroke-width: 2.5;
             stroke-linejoin: round;
+            stroke-linecap: round;
             cursor: pointer;
-            transition: fill 0.2s ease, stroke 0.2s ease, transform 0.1s ease;
+            transition: opacity 0.2s ease, filter 0.2s ease;
         }
 
         .pref-path:hover {
-            fill: var(--map-hover);
+            filter: brightness(0.9);
+            opacity: 0.95;
         }
 
         .pref-path.active-highlight {
-            fill: var(--primary-color) !important;
+            stroke: #2563eb !important;
+            stroke-width: 4 !important;
+            filter: drop-shadow(0 0 6px rgba(37, 99, 235, 0.5));
         }
 
         .pref-path.solved {
             fill: var(--success-color) !important;
         }
 
-        /* 沖縄領域の区切り線 */
         .divider-line {
-            stroke: #94a3b8;
+            stroke: #cbd5e1;
             stroke-width: 1.5;
             stroke-dasharray: 4 4;
         }
 
-        /* モーダルダイアログ */
+        /* モーダル表示 */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(15, 23, 42, 0.4);
-            backdrop-filter: blur(2px);
+            background: rgba(15, 23, 42, 0.35);
+            backdrop-filter: blur(4px);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -146,7 +155,7 @@
         .modal {
             background: white;
             padding: 24px;
-            border-radius: 16px;
+            border-radius: 20px;
             width: 90%;
             max-width: 360px;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
@@ -156,7 +165,7 @@
         .modal h2 {
             margin-top: 0;
             font-size: 1.3rem;
-            color: var(--text-color);
+            color: #1e293b;
         }
 
         .input-group {
@@ -174,9 +183,9 @@
 
         .input-group input {
             width: 100%;
-            padding: 10px;
+            padding: 10px 12px;
             border: 1.5px solid #cbd5e1;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 1rem;
             box-sizing: border-box;
             outline: none;
@@ -184,7 +193,7 @@
 
         .input-group input:focus {
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
         }
 
         .modal-actions {
@@ -214,14 +223,14 @@
             min-height: 1.2em;
         }
 
-        .feedback-msg.correct { color: var(--success-color); }
+        .feedback-msg.correct { color: #059669; }
         .feedback-msg.wrong { color: var(--error-color); }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>🗾 リアル日本地図マスター</h1>
+        <h1>🗾 日本地図マスター</h1>
         <div class="controls">
             <button id="modePref" class="active" onclick="switchMode('pref')">都道府県モード</button>
             <button id="modeRegion" onclick="switchMode('region')">地方モード</button>
@@ -233,15 +242,13 @@
     </header>
 
     <div class="map-container">
-        <!-- 精密SVG日本地図 (ViewBox 0 0 800 800) -->
         <svg viewBox="0 0 800 800" id="japanMap">
-            <!-- 沖縄県用枠線 -->
             <path d="M 520,620 L 780,620 L 780,780" fill="none" class="divider-line" />
             <g id="mapPaths"></g>
         </svg>
     </div>
 
-    <!-- モーダルダイアログ -->
+    <!-- 入力モーダル -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal">
             <h2 id="modalTitle">回答を入力</h2>
@@ -270,7 +277,19 @@
     </div>
 
     <script>
-        // 47都道府県マスターデータ＆リアルSVGパス
+        // 画像と同じ地方別カラーマッピング
+        const regionColors = {
+            "北海道地方": "var(--color-hokkaido)",
+            "東北地方": "var(--color-tohoku)",
+            "関東地方": "var(--color-kanto)",
+            "中部地方": "var(--color-chubu)",
+            "近畿地方": "var(--color-kinki)",
+            "中国地方": "var(--color-chugoku)",
+            "四国地方": "var(--color-shikoku)",
+            "九州地方": "var(--color-kyushu)"
+        };
+
+        // 47都道府県の標準マスターデータ
         const prefData = {
             "hokkaido": { name: "北海道", capital: "札幌市", region: "北海道地方", path: "M580,40 L650,20 L730,50 L770,120 L720,180 L620,190 L560,170 L520,230 L490,210 L510,160 L570,130 Z" },
             "aomori": { name: "青森県", capital: "青森市", region: "東北地方", path: "M530,240 L580,240 L590,270 L550,290 L520,280 Z" },
@@ -328,7 +347,7 @@
 
         const mapPathsGroup = document.getElementById('mapPaths');
 
-        // 地図SVGの生成
+        // 初期化：画像のパステルカラーを適用した地図の生成
         function initMap() {
             mapPathsGroup.innerHTML = '';
             
@@ -338,7 +357,7 @@
                 path.setAttribute("d", item.path);
                 path.setAttribute("class", "pref-path");
                 path.setAttribute("id", `map-${id}`);
-                path.setAttribute("data-id", id);
+                path.setAttribute("fill", regionColors[item.region]);
                 path.onclick = () => handleMapClick(id);
 
                 mapPathsGroup.appendChild(path);
@@ -355,7 +374,7 @@
             updateMapStyles();
         }
 
-        // クリック時処理
+        // クリックイベント
         function handleMapClick(id) {
             clearHighlights();
             const item = prefData[id];
@@ -368,7 +387,6 @@
             } else {
                 if (solvedRegions.has(item.region)) return;
                 selectedId = id;
-                // 同一地方の全県をハイライト
                 Object.keys(prefData).forEach(key => {
                     if (prefData[key].region === item.region) {
                         document.getElementById(`map-${key}`).classList.add('active-highlight');
@@ -378,7 +396,6 @@
             }
         }
 
-        // モーダル表示
         function openModal(title, isPref) {
             document.getElementById('modalTitle').innerText = title;
             document.getElementById('prefInputs').style.display = isPref ? 'block' : 'none';
@@ -406,14 +423,12 @@
             document.querySelectorAll('.pref-path').forEach(el => el.classList.remove('active-highlight'));
         }
 
-        // 表記ゆれ吸収
         function normalize(str) {
             return str.trim()
                 .replace(/(都道府県|都|道|府|県|地方|市|区)$/g, '')
                 .toLowerCase();
         }
 
-        // 正誤判定
         function checkAnswer() {
             const feedback = document.getElementById('feedback');
             const target = prefData[selectedId];
@@ -458,7 +473,6 @@
             }
         }
 
-        // 色の更新
         function updateMapStyles() {
             Object.keys(prefData).forEach(id => {
                 const el = document.getElementById(`map-${id}`);
@@ -471,11 +485,11 @@
                     el.classList.add('solved');
                 } else {
                     el.classList.remove('solved');
+                    el.setAttribute("fill", regionColors[item.region]);
                 }
             });
         }
 
-        // スコア更新
         function updateScoreDisplay() {
             const scoreEl = document.getElementById('score');
             const totalEl = document.getElementById('totalScore');
@@ -489,7 +503,6 @@
             }
         }
 
-        // リセット
         function resetGame() {
             if (confirm("進行状況をリセットしますか？")) {
                 solvedPrefs.clear();
@@ -499,14 +512,12 @@
             }
         }
 
-        // Enterキーで送信
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && document.getElementById('modalOverlay').classList.contains('open')) {
                 checkAnswer();
             }
         });
 
-        // 初期化
         initMap();
         updateScoreDisplay();
     </script>
